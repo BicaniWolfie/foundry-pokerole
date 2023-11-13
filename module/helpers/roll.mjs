@@ -346,14 +346,21 @@ export async function rollDamage(item, actor, token) {
     baseFormula = `${item.system.dmgMod}+${item.system.power}-[def/sp.def]+[STAB]`;
   }
 
+  const targetType = item.system.target; // What type of move it is in regards to targeting (Foe, All foes, ect.)
   let selectedTokens = Array.from(game.user.targets)
     .filter(token => token.actor);
   if (
-    ['Foe', 'Random Foe', 'All Foes', 'Battlefield (Foes)'].includes(item.system.target)
+    ['Foe', 'Random Foe', 'All Foes', 'Battlefield (Foes)'].includes(targetType)
   ) {
     // Exclude the current actor from the list if it can't target itself
     selectedTokens = selectedTokens.filter(token => token.actor._id !== actor.id);
   }
+
+  let targetCount = selectedTokens.length; // Number of selected targets
+
+  // Give the user a warning if they don't have any targets selected.
+  if(targetCount === 0 && targetType !== 'User')
+    ui.notifications.warn(`You do not have any targets selected ${item.system.target}`);
 
   let shouldApplyLeechHeal = false;
   let leechHealPercent = 0;
@@ -416,9 +423,36 @@ export async function rollDamage(item, actor, token) {
 
   const formElement = result[0].querySelector('form');
   const formData = new FormDataExtended(formElement).object;
-  let { enemyDef, stab, effectiveness, painPenalty, poolBonus, constantBonus, applyLeechHeal } = formData;
+  let { enemyDef, stab, effectiveness, painPenalty, poolBonus, constantBonus, applyLeechHeal, overrideTargetCount } = formData;
   poolBonus ??= 0;
   constantBonus ??= 0;
+
+  // Check if the actor has targeted more targets than it is allowed to.
+  if(!overrideTargetCount){
+    switch(targetType) {
+      // The actor may only attack one target if the move doesn't allow the user to attack multiple targets *mind blown*
+      case "Foe" | "Random Foe" | "One Ally":
+        if(targetCount > 1) {
+          ui.notifications.error(`This move can only target one enemy. You selected ${targetCount} targets`);
+          return false;
+        }
+        break;
+      // Handles whether the player has selected more targets than their rank allows.
+      case  "All Foes" | "User and Allies" | "Area" |
+            "Battlefield" | "Battlefield (Foes)" | "Battlefield and Area":
+        // Get the maximum amount of targets the Pokémon can target given its rank
+        let maxTargets = POKEROLE.rankProgression[actor.system.rank ?? 'none'].maxTargets;
+        if(targetCount > maxTargets) {
+          ui.notifications.error(`You cannot target more than your rank allows. Selected ${targetCount}, Target Limit: ${maxTargets}`);
+          return false;
+        }
+        break;
+      case "User": break; // Just to differentiate between User and default.
+      default:
+        console.error(`Move of unknown category: ${item.system}`);
+        break;
+    }
+  }
 
   if (painPenalty) {
     constantBonus -= POKEROLE.painPenalties[painPenalty];

@@ -28,6 +28,11 @@
   </div>
 
   <div class="form-group">
+    <label title="Ignore Target Count">Ignore Target Limit?</label>
+    <input type="checkbox" name="overrideTargetCount"/>
+  </div>
+
+  <div class="form-group">
     <label>Pain Penalization</label>
     <select name="painPenalty">
       {{selectOptions painPenalties selected=painPenalty}}
@@ -39,10 +44,10 @@
   
   <p>Targets: {{targetNames}}</p>
   {{#if hasLeechHeal}}
-  <div class="form-group">
-    <label>Apply restored HP based on damage dealt</label>
-    <input type="checkbox" name="applyLeechHeal" checked/>
-  </div>
+    <div class="form-group">
+      <label>Apply restored HP based on damage dealt</label>
+      <input type="checkbox" name="applyLeechHeal" checked/>
+    </div>
   {{/if}}
   {{/if}}
 
