@@ -427,30 +427,29 @@ export async function rollDamage(item, actor, token) {
   poolBonus ??= 0;
   constantBonus ??= 0;
 
+  // Define and categorize target types into two variables,
+  // one for moves with only one target and one for moves that target multiple actors.
+  // These variables are purely made for the sake of readability
+  const singleTargetList = ["Foe", "Random Foe", "One Ally"];
+  const multiTargetList = [
+    "All Foes", "User and Allies", "Area",
+    "Battlefield", "Battlefield (Foes)", "Battlefield and Area"
+  ];
+
   // Check if the actor has targeted more targets than it is allowed to.
-  if(!overrideTargetCount){
-    switch(targetType) {
-      // The actor may only attack one target if the move doesn't allow the user to attack multiple targets *mind blown*
-      case "Foe" | "Random Foe" | "One Ally":
-        if(targetCount > 1) {
-          ui.notifications.error(`This move can only target one enemy. You selected ${targetCount} targets`);
-          return false;
-        }
-        break;
-      // Handles whether the player has selected more targets than their rank allows.
-      case  "All Foes" | "User and Allies" | "Area" |
-            "Battlefield" | "Battlefield (Foes)" | "Battlefield and Area":
-        // Get the maximum amount of targets the Pokémon can target given its rank
-        let maxTargets = POKEROLE.rankProgression[actor.system.rank ?? 'none'].maxTargets;
-        if(targetCount > maxTargets) {
-          ui.notifications.error(`You cannot target more than your rank allows. Selected ${targetCount}, Target Limit: ${maxTargets}`);
-          return false;
-        }
-        break;
-      case "User": break; // Just to differentiate between User and default.
-      default:
-        console.error(`Move of unknown category: ${item.system}`);
-        break;
+  // This code should only be run if targetCount is greater than one,
+  // else the player is only targeting one actor or none at all.
+  if(!overrideTargetCount && targetCount > 1){
+    if (singleTargetList.includes(targetType)) { // If the move has only one targets (except "User")
+      ui.notifications.error(`This move can only target one enemy. You selected ${targetCount} targets`);
+      return false;
+    } else if (multiTargetList.includes(targetType)) { // If the move has multiple targets
+      // Get the maximum amount of targets the Pokémon can target given its rank
+      let maxTargets = POKEROLE.rankProgression[actor.system.rank ?? 'none'].maxTargets;
+      if (targetCount > maxTargets) {
+        ui.notifications.error(`You cannot target more than your rank allows. Selected ${targetCount} targets of ${maxTargets} permitted`);
+        return false;
+      }
     }
   }
 
