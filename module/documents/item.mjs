@@ -239,6 +239,115 @@ export class PokeroleItem extends Item {
     return true;
   }
 
+  /**
+   * Get a list of all effects applied by this move that don't require a chance roll
+   * @return {object[]} List of effects
+   */
+  getUnconditionalEffects() {
+    return this.system.effectGroups
+      .filter(group => group.condition.type === 'none')
+      .flatMap(group => group.effects);
+  }
+
+  /**
+   * Retrieves the effect groups with a condition of type 'chanceDice'.
+   * @returns {EffectGroup[]} An array of effect groups with a condition of type 'chanceDice'.
+   */
+  getEffectGroupsWithChanceDice() {
+    return this.system.effectGroups.filter(group => group.condition.type === 'chanceDice');
+  }
+
+  /**
+   * Whether this move might target the user.
+   * @return {boolean}
+   */
+  get mightTargetUser() {
+    return ['User', 'User and Allies', 'Area', 'Battlefield', 'Battlefield and Area'].includes(this.system.target);
+  }
+
+  /**
+   * Returns a pretty-printed string of the effect
+   * @param {object} effect The effect to convert
+   */
+  static formatEffect(effect) {
+    let str = '';
+    switch (effect.type) {
+      case 'ailment':
+        str += 'Inflict Condition: ';
+        str += game.i18n.localize(POKEROLE.i18n.ailments[effect.ailment]);
+        break;
+      case 'statChange':
+        str += effect.amount > 0 ? 'Raise ' : 'Lower ';
+        str += game.i18n.localize(POKEROLE.i18n.effectStats[effect.stat]);
+        if (effect.amount !== 1 && effect.amount !== -1) {
+          str += ` by ${Math.abs(effect.amount)}`;
+        }
+        break;
+    }
+
+    str += effect.affects === 'user' ? ' (Self)' : ' (Targets)';
+    return str;
+  }
+
+  /**
+   * Formats the chance dice group into a descriptive string.
+   * @param {object} group The chance dice group object.
+   * @returns {string} The formatted descriptive string.
+   */
+  static formatChanceDiceGroup(group) {
+    if (group.condition.type !== 'chanceDice') {
+      return '';
+    }
+
+    let str = group.condition.amount === 1 ? 'Roll 1 chance die to ' : `Roll ${group.condition.amount} chance dice to `;
+    const statIncreases = [];
+    const statDecreases = [];
+    const ailments = [];
+
+    for (const effect of group.effects) {
+      const localizedStat = game.i18n.localize(POKEROLE.i18n.effectStats[effect.stat]);
+      const amount = Math.abs(effect.amount);
+      let changeStr = localizedStat;
+      if (amount !== 1) { // Only add "by amount" if amount is not 1
+          changeStr += ` by ${amount}`;
+      }
+
+      if (effect.type === 'statChange') {
+          if (effect.amount > 0) {
+              statIncreases.push(changeStr);
+          } else if (effect.amount < 0) {
+              statDecreases.push(changeStr);
+          }
+      } else if (effect.type === 'ailment') {
+          ailments.push(game.i18n.localize(POKEROLE.i18n.ailments[effect.ailment]));
+      }
+    }
+
+    function listToString(list) {
+      if (list.length === 1) {
+        return list[0];
+      }
+      const last = list.pop();
+      return list.join(', ') + ', and ' + last;
+    }
+
+    if (statIncreases.length > 0) {
+        str += 'raise ' + listToString(statIncreases);
+    }
+
+    if (statDecreases.length > 0) {
+        if (statIncreases.length > 0) str += ', and ';
+        str += 'lower ' + listToString(statDecreases);
+    }
+
+    if (ailments.length > 0) {
+        if (statIncreases.length > 0 || statDecreases.length > 0) str += ', and ';
+        str += `inflict condition${ailments.length > 1 ? 's' : ''}: ` + listToString(ailments);
+    }
+
+    return str;
+  }
+
    /**
    * Apply listeners to chat messages.
    * @param {HTML} html  Rendered chat message.
