@@ -2,7 +2,9 @@
 
   {{!-- Sheet Header --}}
   <header class="sheet-header">
+    {{#unless limitedPermissions}}
     <div class="horizontal-line"></div>
+    {{/unless}}
 
     <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" height="100" width="100" />
     <div class="header-fields">
@@ -11,14 +13,15 @@
           <input name="name" type="text" value="{{actor.name}}" placeholder="Name" />
         </h1>
 
+        {{#unless limitedPermissions}}
         <div {{#if system.hasThirdType}}class="sidedata-thirdtype"{{else}}class="sidedata"{{/if}}>
-          <div class="species">
-            <label for="system.pokedexId" class="resource-label">Pokédex</label>
-            <input type="text" class="pokedex-num" name="system.pokedexId" value="{{system.pokedexId}}" placeholder="0"
-              data-dtype="Number" />
-            <input type="text" name="system.species" value="{{system.species}}" placeholder="Species"
-              data-dtype="String" />
+          <div class="active-ability">
+            <label for="system.activeAbility" class="resource-label">Ability</label>
+            <select name="system.activeAbility" value="{{system.activeAbility}}" data-dtype="String" class="active-ability" data-tooltip="{{activeAbilityDescription}}">
+              {{selectOptions abilitiesSelect selected=system.activeAbility}}
+            </select>
           </div>
+          {{/unless}}
 
           <div class="types">
             <label for="system.type1" class="resource-label">Type</label>
@@ -45,7 +48,7 @@
         </div>
       </div>
 
-
+      {{#unless limitedPermissions}}
       <div class="resources flexrow">
         <div class="resource">
           <label for="system.hp.value" class="resource-label">HP</label>
@@ -73,16 +76,18 @@
         </div>
 
       </div>
+      {{/unless}}
     </div>
   </header>
 
   {{!-- Sheet Tab Navigation --}}
   <nav class="sheet-tabs tabs" data-group="primary">
-    {{!-- Default tab is specified in actor-sheet.mjs --}}
+    {{#unless limitedPermissions}}
     <a class="item" data-tab="attributes">Attributes</a>
     <a class="item" data-tab="items">Inventory</a>
     <a class="item" data-tab="moves">Moves</a>
     <a class="item" data-tab="effects">Effects</a>
+    {{/unless}}
     <a class="item" data-tab="biography">Biography</a>
   </nav>
 
@@ -277,10 +282,16 @@
     {{!-- Biography Tab --}}
     <div class="tab biography flexrow" data-group="primary" data-tab="biography">
       <aside class="species-data">
-        <h3 class="section-header">
-          #{{system.pokedexId}} {{system.species}}
+        <div class="pokedex-number-name">
+            <span class="number-sign">#</span>
+            <input type="text" class="pokedex-num" name="system.pokedexId" value="{{system.pokedexId}}" placeholder="0"
+              data-dtype="Number" />
+            <input type="text" name="system.species" value="{{system.species}}" placeholder="Species"
+              data-dtype="String" />
+          {{#unless limitedPermissions}}
           <a class="settings-button"><i class="fas fa-cogs"></i></a>
-        </h3>
+          {{/unless}}
+        </div>
         <ul class="pokedex">
           <li>
             <h4>Category</h4>
@@ -307,6 +318,7 @@
           </li>
         </ul>
 
+        {{#unless limitedPermissions}}
         <div class="abilities">
           <h4>
             Abilities
@@ -326,9 +338,13 @@
             {{/each}}
           </ul>
         </div>
+        {{/unless}}
+
       </aside>
 
+      {{#unless limitedPermissions}}
       {{editor biographyHtml target="system.biography" button=true owner=owner editable=editable engine="prosemirror"}}
+      {{/unless}}
     </div>
 
     {{!-- Owned Items Tab --}}
